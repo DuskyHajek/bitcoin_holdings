@@ -59,7 +59,7 @@
                 <div class="info-content">
                     <div id="country-name">Select a country</div>
                     <div id="btc-amount">0 BTC</div>
-                    <div id="btc-value">$0 USD</div>
+                    <div id="btc-value">Value not available</div>
                 </div>
             </div>
             
@@ -86,12 +86,6 @@
         <footer>
             <div class="footer-content">
                 <p>Data as of Oct 2023 | <span class="source">Source: Public records</span></p>
-                <div class="btc-price">Current BTC Price: <span id="btc-price-value">Loading...</span></div>
-                <div class="share-buttons">
-                    <button class="share-btn twitter"><i class="fab fa-twitter"></i></button>
-                    <button class="share-btn facebook"><i class="fab fa-facebook-f"></i></button>
-                    <button class="share-btn linkedin"><i class="fab fa-linkedin-in"></i></button>
-                </div>
             </div>
         </footer>
     </div>
@@ -137,9 +131,6 @@
                 "FI": 90
             };
 
-            // Fetch the current Bitcoin price
-            fetchBtcPrice();
-            
             // Initialize the map immediately
             setTimeout(() => {
                 initializeMap();
@@ -149,19 +140,6 @@
             document.getElementById('close-info').addEventListener('click', function() {
                 document.getElementById('country-info').classList.remove('active');
                 document.getElementById('mobile-overlay').classList.add('hidden');
-            });
-            
-            // Set up social media sharing buttons
-            document.querySelector('.share-btn.twitter').addEventListener('click', function() {
-                shareOnSocial('twitter');
-            });
-            
-            document.querySelector('.share-btn.facebook').addEventListener('click', function() {
-                shareOnSocial('facebook');
-            });
-            
-            document.querySelector('.share-btn.linkedin').addEventListener('click', function() {
-                shareOnSocial('linkedin');
             });
             
             // Add event listener for the mobile overlay
@@ -289,19 +267,6 @@
             document.getElementById('close-info').addEventListener('click', function() {
                 countryInfo.classList.remove('active');
                 document.getElementById('mobile-overlay').classList.add('hidden');
-            });
-            
-            // Set up social media sharing buttons
-            document.querySelector('.share-btn.twitter').addEventListener('click', function() {
-                shareOnSocial('twitter');
-            });
-            
-            document.querySelector('.share-btn.facebook').addEventListener('click', function() {
-                shareOnSocial('facebook');
-            });
-            
-            document.querySelector('.share-btn.linkedin').addEventListener('click', function() {
-                shareOnSocial('linkedin');
             });
             
             // Add event listener for the mobile overlay

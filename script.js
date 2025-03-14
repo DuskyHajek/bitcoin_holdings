@@ -1,117 +1,72 @@
 // This is the main JavaScript file (script.js)
 
+// Country names mapping
+const countryNames = {
+    "US": "United States",
+    "CN": "China", 
+    "GB": "United Kingdom",
+    "UA": "Ukraine",
+    "BT": "Bhutan",
+    "SV": "El Salvador",
+    "FI": "Finland"
+};
+
+// Bitcoin holdings data
+const btcHoldings = {
+    "US": 207189,
+    "CN": 194000,
+    "GB": 61000,
+    "UA": 46351,
+    "BT": 13029,
+    "SV": 6102,
+    "FI": 90
+};
+
+// Bitcoin color palette
+const colors = {
+    noBtc: '#f8f9fa',
+    lowBtc: '#f7931a33',
+    mediumBtc: '#f7931a88',
+    highBtc: '#f7931a',
+    text: '#4d4d4d',
+    background: '#ffffff',
+    accent: '#f7931a'
+};
+
 document.addEventListener('DOMContentLoaded', function() {
-    // Bitcoin color palette
-    const colors = {
-        noBtc: '#f8f9fa',
-        lowBtc: '#f7931a33',
-        mediumBtc: '#f7931a88',
-        highBtc: '#f7931a',
-        text: '#4d4d4d',
-        background: '#ffffff',
-        accent: '#f7931a'
-    };
-
-    const btcHoldings = {
-        "US": 207189,
-        "CN": 194000,
-        "GB": 61000,
-        "UA": 46351,
-        "BT": 13029,
-        "SV": 6102,
-        "FI": 90
-    };
-
-    // Fetch the current Bitcoin price
-    fetchBtcPrice();
-    
     // Initialize the map immediately
-    setTimeout(() => {
-        initializeMap();
-    }, 100);
+    setTimeout(initializeMap, 100);
     
-    // Close country info panel when close button clicked
-    document.getElementById('close-info').addEventListener('click', function() {
-        document.getElementById('country-info').classList.remove('active');
-        document.getElementById('mobile-overlay').classList.add('hidden');
-    });
-    
-    // Set up social media sharing buttons
-    document.querySelector('.share-btn.twitter').addEventListener('click', function() {
-        shareOnSocial('twitter');
-    });
-    
-    document.querySelector('.share-btn.facebook').addEventListener('click', function() {
-        shareOnSocial('facebook');
-    });
-    
-    document.querySelector('.share-btn.linkedin').addEventListener('click', function() {
-        shareOnSocial('linkedin');
-    });
-
-    const mobileOverlay = document.getElementById('mobile-overlay');
-    const countryInfo = document.getElementById('country-info');
-    const closeInfoBtn = document.getElementById('close-info');
-
-    if (mobileOverlay && countryInfo && closeInfoBtn) {
-        closeInfoBtn.addEventListener('click', function() {
-            countryInfo.classList.remove('active');
-            mobileOverlay.classList.add('hidden');
-        });
-
-        mobileOverlay.addEventListener('click', function() {
-            countryInfo.classList.remove('active');
-            this.classList.add('hidden');
-        });
-    }
+    // Event listeners for country info and sharing
+    setupEventListeners();
 });
 
 function initializeMap() {
     // Try to find the SVG in the map container
     const mapContainer = document.getElementById('map-container');
-    console.log('Map Container:', mapContainer);
+    if (!mapContainer) {
+        console.error('Map container not found');
+        showMapError('Map container is missing');
+        return;
+    }
 
     // First, try to find an existing SVG
-    let svg = mapContainer ? mapContainer.querySelector('svg:not(#fallback-svg)') : null;
+    let svg = mapContainer.querySelector('svg:not(#fallback-svg)');
     
     // If no SVG found, try the fallback SVG
     if (!svg) {
         const fallbackSvg = document.getElementById('fallback-svg');
         if (fallbackSvg) {
             console.log('Using fallback SVG');
-            // Clone the fallback SVG and make it visible
             svg = fallbackSvg.cloneNode(true);
             svg.style.display = 'block';
             mapContainer.appendChild(svg);
         }
     }
 
-    // If still no SVG, log error and show error message
+    // If still no SVG, show error
     if (!svg) {
-        console.error('No SVG found in the map container. Possible reasons:');
-        console.error('1. SVG not loaded correctly');
-        console.error('2. Incorrect selector used');
-        console.error('3. SVG content missing');
-        
-        // Show error message to the user
-        const mapError = document.getElementById('map-error');
-        const mapLoading = document.getElementById('map-loading');
-        
-        if (mapLoading) mapLoading.style.display = 'none';
-        if (mapError) {
-            mapError.style.display = 'block';
-            mapError.innerHTML = `
-                <p>Error: Map could not be loaded.</p>
-                <p>Possible reasons:
-                    <ul>
-                        <li>SVG file is missing</li>
-                        <li>Network issues</li>
-                        <li>Incorrect file path</li>
-                    </ul>
-                </p>
-                <button onclick="retryMapLoad()" class="retry-btn">Retry Loading</button>
-            `;
-        }
+        showMapError('SVG map could not be loaded');
         return;
     }
 
@@ -124,27 +79,6 @@ function initializeMap() {
     // Get all country paths
     const countryPaths = svg.querySelectorAll('path');
     console.log('Country Paths Found:', countryPaths.length);
-    
-    // Bitcoin color palette
-    const colors = {
-        noBtc: '#f8f9fa',
-        lowBtc: '#f7931a33',
-        mediumBtc: '#f7931a88',
-        highBtc: '#f7931a',
-        text: '#4d4d4d',
-        background: '#ffffff',
-        accent: '#f7931a'
-    };
-
-    const btcHoldings = {
-        "US": 207189,
-        "CN": 194000,
-        "GB": 61000,
-        "UA": 46351,
-        "BT": 13029,
-        "SV": 6102,
-        "FI": 90
-    };
     
     countryPaths.forEach(path => {
         // Get country code from the id of the path
@@ -194,21 +128,63 @@ function initializeMap() {
     adjustMapSize();
 }
 
+function showMapError(message) {
+    const mapLoading = document.getElementById('map-loading');
+    const mapError = document.getElementById('map-error');
+    
+    if (mapLoading) mapLoading.style.display = 'none';
+    if (mapError) {
+        mapError.style.display = 'block';
+        mapError.innerHTML = `
+            <p>Error: ${message}</p>
+            <p>Possible reasons:
+                <ul>
+                    <li>SVG file is missing</li>
+                    <li>Network issues</li>
+                    <li>Incorrect file path</li>
+                </ul>
+            </p>
+            <button onclick="retryMapLoad()" class="retry-btn">Retry Loading</button>
+        `;
+    }
+}
+
+function setupEventListeners() {
+    // Close country info panel when close button clicked
+    const closeInfoBtn = document.getElementById('close-info');
+    const countryInfo = document.getElementById('country-info');
+    const mobileOverlay = document.getElementById('mobile-overlay');
+
+    if (closeInfoBtn) {
+        closeInfoBtn.addEventListener('click', function() {
+            if (countryInfo) countryInfo.classList.remove('active');
+            if (mobileOverlay) mobileOverlay.classList.add('hidden');
+        });
+    }
+
+    // Mobile overlay click
+    if (mobileOverlay) {
+        mobileOverlay.addEventListener('click', function() {
+            if (countryInfo) countryInfo.classList.remove('active');
+            this.classList.add('hidden');
+        });
+    }
+}
+
 function adjustMapSize() {
     const mapContainer = document.getElementById('map-container');
+    if (!mapContainer) return;
+
     const containerWidth = mapContainer.clientWidth;
+    const svg = mapContainer.querySelector('svg');
+    
+    if (!svg) return;
     
     // If width is less than 768px (mobile), adjust the viewBox to focus more on populated areas
     if (containerWidth < 768) {
-        const svg = mapContainer.querySelector('svg');
-        if (svg) {
-            svg.setAttribute('viewBox', '300 0 1400 1000');
-        }
+        svg.setAttribute('viewBox', '300 0 1400 1000');
     } else {
-        const svg = mapContainer.querySelector('svg');
-        if (svg) {
-            svg.setAttribute('viewBox', '0 0 2000 1000');
-        }
+        svg.setAttribute('viewBox', '0 0 2000 1000');
     }
 }
 
@@ -299,17 +275,7 @@ function showCountryInfo(event) {
         
         countryNameElement.textContent = countryName;
         btcAmountElement.textContent = `${btcAmount.toLocaleString()} BTC`;
-        
-        // Calculate value in USD if BTC price is available
-        const btcPriceElement = document.getElementById('btc-price-value');
-        const btcPrice = parseFloat(btcPriceElement.getAttribute('data-price'));
-        
-        if (!isNaN(btcPrice)) {
-            const valueUsd = btcAmount * btcPrice;
-            btcValueElement.textContent = `≈ $${valueUsd.toLocaleString()} USD`;
-        } else {
-            btcValueElement.textContent = 'Value: Price data unavailable';
-        }
+        btcValueElement.textContent = 'Value not available';
         
         // Show the panel
         countryInfoPanel.classList.add('active');
@@ -321,61 +287,11 @@ function showCountryInfo(event) {
     }
 }
 
-// Add comprehensive country name mapping
-const countryNames = {
-    "US": "United States",
-    "CN": "China", 
-    "GB": "United Kingdom",
-    "UA": "Ukraine",
-    "BT": "Bhutan",
-    "SV": "El Salvador",
-    "FI": "Finland"
-};
-
-// Improved error handling for Bitcoin price fetching
-async function fetchBtcPrice() {
-    try {
-        const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd');
-        const data = await response.json();
-        const btcPrice = data.bitcoin.usd;
-        
-        const btcPriceElement = document.getElementById('btc-price-value');
-        btcPriceElement.textContent = `$${btcPrice.toLocaleString()}`;
-        btcPriceElement.setAttribute('data-price', btcPrice);
-    } catch (error) {
-        console.error('Error fetching Bitcoin price:', error);
-        const btcPriceElement = document.getElementById('btc-price-value');
-        btcPriceElement.textContent = 'Price Unavailable';
-    }
-}
-
-// Improved country name retrieval
 function getCountryNameFromPath(pathElement) {
     const countryCode = pathElement.id.toUpperCase();
     return countryNames[countryCode] || countryCode;
 }
 
-// Social sharing functions with error handling
-function shareOnSocial(platform) {
-    const shareText = 'Check out this interactive map of Bitcoin holdings by country!';
-    const shareUrl = window.location.href;
-    
-    switch(platform) {
-        case 'twitter':
-            window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`, '_blank');
-            break;
-        case 'facebook':
-            window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`, '_blank');
-            break;
-        case 'linkedin':
-            window.open(`https://www.linkedin.com/shareArticle?mini=true&url=${encodeURIComponent(shareUrl)}&title=${encodeURIComponent(shareText)}`, '_blank');
-            break;
-        default:
-            console.error('Unsupported sharing platform');
-    }
-}
-
-// Modify retryMapLoad to add more logging
 function retryMapLoad() {
     console.log('Retrying map load...');
     
@@ -388,21 +304,5 @@ function retryMapLoad() {
     if (mapError) mapError.style.display = 'none';
     
     // Reinitialize the map
-    setTimeout(() => {
-        initializeMap();
-    }, 100);
+    setTimeout(initializeMap, 100);
 }
-
-// Add a global error handler
-window.addEventListener('error', function(event) {
-    console.error('Unhandled error:', event.error);
-    const mapError = document.getElementById('map-error');
-    if (mapError) {
-        mapError.style.display = 'block';
-        mapError.innerHTML = `
-            <p>An unexpected error occurred:</p>
-            <p>${event.error ? event.error.message : 'Unknown error'}</p>
-            <button onclick="retryMapLoad()" class="retry-btn">Retry Loading</button>
-        `;
-    }
-});
