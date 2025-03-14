@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Countries Holding Bitcoin</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
+    <style>
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        #map-error {
+            display: none;
+            color: #f7931a;
+            text-align: center;
+            padding: 2rem;
+            font-size: 1.2rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-content">
+                <h1>Countries Holding Bitcoin</h1>
+                <p class="subtitle">Explore Bitcoin reserves worldwide</p>
+            </div>
+        </header>
+        
+        <main>
+            <div id="map-container">
+                <!-- Inline SVG content -->
+                <div id="map-loading" style="text-align: center; padding: 2rem;">
+                    <p>Loading map...</p>
+                    <div style="width: 40px; height: 40px; border: 4px solid #f7931a; border-top: 4px solid transparent; border-radius: 50%; margin: 1rem auto; animation: spin 1s linear infinite;"></div>
+                </div>
+                <div id="map-error">
+                    <p>Error loading map. Please check your internet connection or try refreshing the page.</p>
+                    <button onclick="retryMapLoad()" class="retry-btn">Retry Loading</button>
+                </div>
+            </div>
+            
+            <div id="country-info">
+                <div class="info-header">
+                    <h2>Bitcoin Holdings</h2>
+                    <button id="close-info"><i class="fas fa-times"></i></button>
+                </div>
+                <div class="info-content">
+                    <div id="country-name">Select a country</div>
+                    <div id="btc-amount">0 BTC</div>
+                    <div id="btc-value">$0 USD</div>
+                </div>
+            </div>
+            
+            <div id="legend">
+                <div class="legend-item">
+                    <div class="color-box no-btc"></div>
+                    <span>No Bitcoin</span>
+                </div>
+                <div class="legend-item">
+                    <div class="color-box low-btc"></div>
+                    <span>&lt; 10,000 BTC</span>
+                </div>
+                <div class="legend-item">
+                    <div class="color-box medium-btc"></div>
+                    <span>10,000 - 100,000 BTC</span>
+                </div>
+                <div class="legend-item">
+                    <div class="color-box high-btc"></div>
+                    <span>&gt; 100,000 BTC</span>
+                </div>
+            </div>
+        </main>
+        
+        <footer>
+            <div class="footer-content">
+                <p>Data as of Oct 2023 | <span class="source">Source: Public records</span></p>
+                <div class="btc-price">Current BTC Price: <span id="btc-price-value">Loading...</span></div>
+                <div class="share-buttons">
+                    <button class="share-btn twitter"><i class="fab fa-twitter"></i></button>
+                    <button class="share-btn facebook"><i class="fab fa-facebook-f"></i></button>
+                    <button class="share-btn linkedin"><i class="fab fa-linkedin-in"></i></button>
+                </div>
+            </div>
+        </footer>
+    </div>
+    
+    <div id="tooltip" class="hidden"></div>
+    <div id="mobile-overlay" class="hidden"></div>
+    
+    <script>
+        function retryMapLoad() {
+            const mapContainer = document.getElementById('map-container');
+            const mapLoading = document.getElementById('map-loading');
+            const mapError = document.getElementById('map-error');
+            
+            // Reset to loading state
+            mapLoading.style.display = 'block';
+            mapError.style.display = 'none';
+            
+            // Reinitialize the map
+            setTimeout(() => {
+                initializeMap();
+            }, 100);
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // Bitcoin color palette
+            const colors = {
+                noBtc: '#f8f9fa',
+                lowBtc: '#f7931a33',
+                mediumBtc: '#f7931a88',
+                highBtc: '#f7931a',
+                text: '#4d4d4d',
+                background: '#ffffff',
+                accent: '#f7931a'
+            };
+
+            const btcHoldings = {
+                "US": 207189,
+                "CN": 194000,
+                "GB": 61000,
+                "UA": 46351,
+                "BT": 13029,
+                "SV": 6102,
+                "FI": 90
+            };
+
+            // Fetch the current Bitcoin price
+            fetchBtcPrice();
+            
+            // Initialize the map immediately
+            setTimeout(() => {
+                initializeMap();
+            }, 100);
+            
+            // Close country info panel when close button clicked
+            document.getElementById('close-info').addEventListener('click', function() {
+                document.getElementById('country-info').classList.remove('active');
+                document.getElementById('mobile-overlay').classList.add('hidden');
+            });
+            
+            // Set up social media sharing buttons
+            document.querySelector('.share-btn.twitter').addEventListener('click', function() {
+                shareOnSocial('twitter');
+            });
+            
+            document.querySelector('.share-btn.facebook').addEventListener('click', function() {
+                shareOnSocial('facebook');
+            });
+            
+            document.querySelector('.share-btn.linkedin').addEventListener('click', function() {
+                shareOnSocial('linkedin');
+            });
+            
+            // Add event listener for the mobile overlay
+            document.getElementById('mobile-overlay').addEventListener('click', function() {
+                document.getElementById('country-info').classList.remove('active');
+                this.classList.add('hidden');
+            });
+        });
+
+        function initializeMap() {
+            const svg = document.querySelector('#map-container svg');
+            svg.setAttribute('width', '100%');
+            svg.setAttribute('height', 'auto');
+            svg.setAttribute('viewBox', '0 0 2000 1000');
+            svg.style.maxWidth = '100%';
+            
+            // Get all country paths
+            const countryPaths = svg.querySelectorAll('path');
+            
+            countryPaths.forEach(path => {
+                // Get country code from the id of the path
+                const countryCode = path.id.toUpperCase();
+                
+                // Set the fill color based on BTC holdings
+                if (btcHoldings[countryCode]) {
+                    const btcAmount = btcHoldings[countryCode];
+                    
+                    if (btcAmount > 100000) {
+                        path.setAttribute('fill', colors.highBtc);
+                        path.setAttribute('data-category', 'high');
+                    } else if (btcAmount >= 10000) {
+                        path.setAttribute('fill', colors.mediumBtc);
+                        path.setAttribute('data-category', 'medium');
+                    } else {
+                        path.setAttribute('fill', colors.lowBtc);
+                        path.setAttribute('data-category', 'low');
+                    }
+                    
+                    // Store BTC holdings as a data attribute
+                    path.setAttribute('data-btc', btcAmount);
+                } else {
+                    path.setAttribute('fill', colors.noBtc);
+                    path.setAttribute('data-category', 'none');
+                }
+                
+                // Add hover effects
+                path.addEventListener('mouseenter', showTooltip);
+                path.addEventListener('mouseleave', hideTooltip);
+                path.addEventListener('click', showCountryInfo);
+                
+                // For touch devices
+                path.addEventListener('touchstart', function(e) {
+                    e.preventDefault();
+                    showTooltip.call(this, e);
+                });
+            });
+            
+            // For responsive behavior
+            window.addEventListener('resize', function() {
+                adjustMapSize();
+            });
+            
+            adjustMapSize();
+        }
+
+        function adjustMapSize() {
+            const mapContainer = document.getElementById('map-container');
+            const containerWidth = mapContainer.clientWidth;
+            
+            // If width is less than 768px (mobile), adjust the viewBox to focus more on populated areas
+            if (containerWidth < 768) {
+                const svg = mapContainer.querySelector('svg');
+                if (svg) {
+                    svg.setAttribute('viewBox', '300 0 1400 1000');
+                }
+            } else {
+                const svg = mapContainer.querySelector('svg');
+                if (svg) {
+                    svg.setAttribute('viewBox', '0 0 2000 1000');
+                }
+            }
+        }
+
+        function showTooltip(event) {
+            const countryCode = this.id.toUpperCase();
+            const tooltip = document.getElementById('tooltip');
+            
+            // Get country name from the map
+            let countryName = getCountryNameFromPath(this);
+            
+            if (btcHoldings[countryCode]) {
+                const btcAmount = btcHoldings[countryCode].toLocaleString();
+                tooltip.innerHTML = `<strong>${countryName}</strong><br>${btcAmount} BTC`;
+                tooltip.classList.remove('hidden');
+                
+                // Position the tooltip near the mouse
+                const rect = this.getBoundingClientRect();
+                const tooltipX = rect.left + (rect.width / 2) - (tooltip.offsetWidth / 2);
+                const tooltipY = rect.top + (rect.height / 2) - (tooltip.offsetHeight / 2);
+                tooltip.style.left = `${tooltipX}px`;
+                tooltip.style.top = `${tooltipY}px`;
+            } else {
+                tooltip.classList.add('hidden');
+            }
+        }
+
+        function hideTooltip() {
+            const tooltip = document.getElementById('tooltip');
+            tooltip.classList.add('hidden');
+        }
+
+        function showCountryInfo(event) {
+            const countryCode = this.id.toUpperCase();
+            const countryInfo = document.getElementById('country-info');
+            const countryName = getCountryNameFromPath(this);
+            const btcAmount = btcHoldings[countryCode] ? btcHoldings[countryCode].toLocaleString() : '0';
+            const btcValue = btcHoldings[countryCode] ? (btcHoldings[countryCode] * btcPrice).toLocaleString() : '$0 USD';
+            
+            countryInfo.classList.add('active');
+            document.getElementById('country-name').textContent = countryName;
+            document.getElementById('btc-amount').textContent = btcAmount + ' BTC';
+            document.getElementById('btc-value').textContent = btcValue;
+            
+            // Close country info panel when close button clicked
+            document.getElementById('close-info').addEventListener('click', function() {
+                countryInfo.classList.remove('active');
+                document.getElementById('mobile-overlay').classList.add('hidden');
+            });
+            
+            // Set up social media sharing buttons
+            document.querySelector('.share-btn.twitter').addEventListener('click', function() {
+                shareOnSocial('twitter');
+            });
+            
+            document.querySelector('.share-btn.facebook').addEventListener('click', function() {
+                shareOnSocial('facebook');
+            });
+            
+            document.querySelector('.share-btn.linkedin').addEventListener('click', function() {
+                shareOnSocial('linkedin');
+            });
+            
+            // Add event listener for the mobile overlay
+            document.getElementById('mobile-overlay').addEventListener('click', function() {
+                countryInfo.classList.remove('active');
+                this.classList.add('hidden');
+            });
+        }
+
+        function getCountryNameFromPath(path) {
+            const countryCode = path.id.toUpperCase();
+            const countryNames = {
+                "US": "United States",
+                "CN": "China",
+                "GB": "United Kingdom",
+                "UA": "Ukraine",
+                "BT": "Bhutan",
+                "SV": "El Salvador",
+                "FI": "Finland"
+            };
+            return countryNames[countryCode] || countryCode;
+        }
+    </script>
+    <script src="script.js"></script>
+</body>
+</html>
