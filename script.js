@@ -34,12 +34,46 @@ const colors = {
 };
 
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialize the map immediately
-    setTimeout(initializeMap, 100);
+    // Load the world map SVG
+    loadWorldMap();
     
     // Event listeners for country info and sharing
     setupEventListeners();
 });
+
+function loadWorldMap() {
+    const mapContainer = document.getElementById('map-container');
+    if (!mapContainer) {
+        console.error('Map container not found');
+        showMapError('Map container is missing');
+        return;
+    }
+
+    // Create a new object to load the SVG
+    const xhr = new XMLHttpRequest();
+    xhr.open('GET', 'world.svg', true);
+    xhr.onload = function() {
+        if (xhr.status === 200) {
+            // Remove loading indicator
+            const mapLoading = document.getElementById('map-loading');
+            if (mapLoading) mapLoading.style.display = 'none';
+            
+            // Insert the SVG content
+            mapContainer.innerHTML = xhr.responseText;
+            
+            // Now initialize the map with the loaded SVG
+            setTimeout(initializeMap, 100);
+        } else {
+            console.error('Failed to load world.svg:', xhr.status);
+            showMapError('Failed to load world map');
+        }
+    };
+    xhr.onerror = function() {
+        console.error('Network error when loading world.svg');
+        showMapError('Network error when loading world map');
+    };
+    xhr.send();
+}
 
 function initializeMap() {
     // Try to find the SVG in the map container
@@ -50,22 +84,10 @@ function initializeMap() {
         return;
     }
 
-    // First, try to find an existing SVG
-    let svg = mapContainer.querySelector('svg:not(#fallback-svg)');
+    // Find the SVG element
+    let svg = mapContainer.querySelector('svg');
     
-    // If no SVG found, try the fallback SVG
-    if (!svg) {
-        const fallbackSvg = document.getElementById('fallback-svg');
-        if (fallbackSvg) {
-            console.log('Using fallback SVG');
-            svg = fallbackSvg.cloneNode(true);
-            svg.id = 'main-map-svg';  // Unique ID
-            svg.style.display = 'block';
-            mapContainer.appendChild(svg);
-        }
-    }
-
-    // If still no SVG, show error
+    // If no SVG found, show error
     if (!svg) {
         showMapError('SVG map could not be loaded');
         return;
@@ -74,7 +96,7 @@ function initializeMap() {
     // Ensure valid SVG attributes
     svg.setAttribute('width', '100%');
     svg.setAttribute('height', '500');  // Use numeric value
-    svg.setAttribute('viewBox', '0 0 1000 500');
+    svg.setAttribute('viewBox', '0 0 2000 857');  // Match the original viewBox from world.svg
     svg.style.maxWidth = '100%';
     
     // Get all country paths
@@ -82,20 +104,11 @@ function initializeMap() {
     console.log('Country Paths Found:', countryPaths.length);
     
     countryPaths.forEach(path => {
-        // Validate path data
-        try {
-            const pathData = path.getAttribute('d');
-            if (!pathData || !isValidPathData(pathData)) {
-                console.warn(`Invalid path data for ${path.id}`);
-                return;  // Skip this path
-            }
-        } catch (error) {
-            console.error('Path validation error:', error);
-            return;
-        }
-        
         // Get country code from the id of the path
-        const countryCode = path.id.toUpperCase();
+        const countryCode = path.id ? path.id.toUpperCase() : '';
+        
+        // Skip paths without an id
+        if (!countryCode) return;
         
         // Set the fill color based on BTC holdings
         if (btcHoldings[countryCode]) {
@@ -139,13 +152,6 @@ function initializeMap() {
     window.addEventListener('resize', adjustMapSize);
     
     adjustMapSize();
-}
-
-// Helper function to validate path data
-function isValidPathData(pathData) {
-    // Basic validation for SVG path data
-    const pathRegex = /^[MmLlHhVvCcSsQqTtAaZz][\d\s,.-]+$/;
-    return pathRegex.test(pathData);
 }
 
 function showMapError(message) {
@@ -308,14 +314,12 @@ function showCountryInfo(event) {
 }
 
 function getCountryNameFromPath(pathElement) {
+    if (!pathElement || !pathElement.id) return 'Unknown';
     const countryCode = pathElement.id.toUpperCase();
     return countryNames[countryCode] || countryCode;
 }
 
 function retryMapLoad() {
-    console.log('Retrying map load...');
-    
-    const mapContainer = document.getElementById('map-container');
     const mapLoading = document.getElementById('map-loading');
     const mapError = document.getElementById('map-error');
     
@@ -323,6 +327,6 @@ function retryMapLoad() {
     if (mapLoading) mapLoading.style.display = 'block';
     if (mapError) mapError.style.display = 'none';
     
-    // Reinitialize the map
-    setTimeout(initializeMap, 100);
+    // Load the world map again
+    loadWorldMap();
 }
