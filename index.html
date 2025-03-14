@@ -6,7 +6,7 @@
     <title>Countries Holding Bitcoin</title>
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
     <style>
         @keyframes spin {
             0% { transform: rotate(0deg); }
@@ -19,6 +19,33 @@
             padding: 2rem;
             font-size: 1.2rem;
         }
+        
+        /* Bitcoin-themed background animation */
+        @keyframes bitcoinBackground {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+                -45deg, 
+                #f7931a, 
+                #2d2d2d, 
+                #f7931a, 
+                #2d2d2d
+            );
+            background-size: 400% 400%;
+            animation: bitcoinBackground 15s ease infinite;
+            opacity: 0.1;
+            z-index: -1;
+        }
     </style>
 </head>
 <body>
@@ -27,10 +54,20 @@
             <div class="header-content">
                 <h1>Countries Holding Bitcoin</h1>
                 <p class="subtitle">Explore Bitcoin reserves worldwide</p>
+                <div class="bitcoin-logo">
+                    <svg width="40" height="40" viewBox="0 0 2000 2000" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M1970,1242c-133.48,535.66-676.18,861.68-1212,728S-103.69,1293.89,30,758.18,706.12-103.7,1241.82,30,2103.69,706.16,1970,1242h0Z" fill="#ffffff"/>
+                        <path d="M1441,857.53c19.88-133.07-81.44-204.61-220-252.33l45-180.25-109.76-27.34-43.84,175.51c-28.82-7.18-58.44-14-87.88-20.68l44-176.67L958.87,348.43,914,528.61,692.68,473.79,663.48,591s81.42,18.66,79.7,19.82c44.44,11.1,52.5,40.5,51.14,63.82l-123.14,493.8c-5.44,13.5-19.22,33.74-50.28,26,1.1,1.6-79.76-20-79.76-20l-54.48,125.79,221,55.8-45.42,182.35,109.6,27.34,45-180.39c30,8.12,59,15.62,87.42,22.68l-44.82,179.55,109.74,27.34,45.42-182c187.13,35.4,327.85,21.12,387-148,47.83-136.58-2.34-215.88-100.8-267.58,71.7-16.6,125.7-63.74,140.11-161.17m-250.71,351.52c-34,136.54-263.35,62.74-337.77,44.26l60.26-241.55c74.38,18.56,312.89,55.32,277.55,197.29m34-354.18c-30.94,124-221.91,61-283.89,45.54L994.91,682c62,15.48,261.51,44.3,229.25,172.86" fill="#f7931a"/>
+                    </svg>
+                </div>
             </div>
         </header>
         
         <main>
+            <div class="intro-text">
+                <p>This interactive map shows countries with significant Bitcoin holdings in their national reserves. Hover over countries to see details and click for more information.</p>
+            </div>
+            
             <div id="map-container">
                 <!-- Inline SVG content -->
                 <div id="map-loading" style="text-align: center; padding: 2rem;">
@@ -48,18 +85,6 @@
                     <path id="CN" fill="#f7931a88" d="M400,200 L500,300 L600,200 Z"/>
                     <path id="GB" fill="#f7931a" d="M700,300 L800,400 L900,300 Z"/>
                 </svg>
-            </div>
-            
-            <div id="country-info">
-                <div class="info-header">
-                    <h2>Bitcoin Holdings</h2>
-                    <button id="close-info"><i class="fas fa-times"></i></button>
-                </div>
-                <div class="info-content">
-                    <div id="country-name">Select a country</div>
-                    <div id="btc-amount">0 BTC</div>
-                    <div id="btc-value">Value not available</div>
-                </div>
             </div>
             
             <div id="legend">
@@ -80,11 +105,46 @@
                     <span>&gt; 100,000 BTC</span>
                 </div>
             </div>
+            
+            <div class="data-table-container">
+                <h2>Bitcoin Holdings by Country</h2>
+                <table class="bitcoin-holdings-table">
+                    <thead>
+                        <tr>
+                            <th>Country</th>
+                            <th>Bitcoin Holdings (BTC)</th>
+                            <th>Category</th>
+                        </tr>
+                    </thead>
+                    <tbody id="bitcoin-holdings-body">
+                        <!-- Rows will be dynamically populated by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+            
+            <div id="country-info">
+                <div class="info-header">
+                    <h2>Bitcoin Holdings</h2>
+                    <button id="close-info"><i class="fas fa-times"></i></button>
+                </div>
+                <div class="info-content">
+                    <div id="country-name">Select a country</div>
+                    <div id="btc-amount">0 BTC</div>
+                    <div id="btc-value">Value not available</div>
+                    <div class="country-rank" id="country-rank"></div>
+                </div>
+            </div>
         </main>
         
         <footer>
             <div class="footer-content">
                 <p>Data as of Oct 2023 | <span class="source">Source: Public records</span></p>
+                <div class="share-buttons">
+                    <button class="share-btn" title="Share on Twitter"><i class="fab fa-twitter"></i></button>
+                    <button class="share-btn" title="Share on Facebook"><i class="fab fa-facebook-f"></i></button>
+                    <button class="share-btn" title="Share on LinkedIn"><i class="fab fa-linkedin-in"></i></button>
+                </div>
+                <p class="copyright">© 2023 Bitcoin Holdings Map | <a href="#" class="footer-link">About</a> | <a href="#" class="footer-link">Privacy Policy</a></p>
             </div>
         </footer>
     </div>
