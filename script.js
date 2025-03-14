@@ -59,6 +59,7 @@ function initializeMap() {
         if (fallbackSvg) {
             console.log('Using fallback SVG');
             svg = fallbackSvg.cloneNode(true);
+            svg.id = 'main-map-svg';  // Unique ID
             svg.style.display = 'block';
             mapContainer.appendChild(svg);
         }
@@ -70,10 +71,10 @@ function initializeMap() {
         return;
     }
 
-    // Proceed with map initialization
+    // Ensure valid SVG attributes
     svg.setAttribute('width', '100%');
-    svg.setAttribute('height', '500px');
-    svg.setAttribute('viewBox', '0 0 2000 1000');
+    svg.setAttribute('height', '500');  // Use numeric value
+    svg.setAttribute('viewBox', '0 0 1000 500');
     svg.style.maxWidth = '100%';
     
     // Get all country paths
@@ -81,6 +82,18 @@ function initializeMap() {
     console.log('Country Paths Found:', countryPaths.length);
     
     countryPaths.forEach(path => {
+        // Validate path data
+        try {
+            const pathData = path.getAttribute('d');
+            if (!pathData || !isValidPathData(pathData)) {
+                console.warn(`Invalid path data for ${path.id}`);
+                return;  // Skip this path
+            }
+        } catch (error) {
+            console.error('Path validation error:', error);
+            return;
+        }
+        
         // Get country code from the id of the path
         const countryCode = path.id.toUpperCase();
         
@@ -126,6 +139,13 @@ function initializeMap() {
     window.addEventListener('resize', adjustMapSize);
     
     adjustMapSize();
+}
+
+// Helper function to validate path data
+function isValidPathData(pathData) {
+    // Basic validation for SVG path data
+    const pathRegex = /^[MmLlHhVvCcSsQqTtAaZz][\d\s,.-]+$/;
+    return pathRegex.test(pathData);
 }
 
 function showMapError(message) {
