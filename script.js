@@ -67,7 +67,55 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function initializeMap() {
-    const svg = document.querySelector('#map-container svg');
+    // Try to find the SVG in the map container
+    const mapContainer = document.getElementById('map-container');
+    console.log('Map Container:', mapContainer);
+
+    // First, try to find an existing SVG
+    let svg = mapContainer ? mapContainer.querySelector('svg:not(#fallback-svg)') : null;
+    
+    // If no SVG found, try the fallback SVG
+    if (!svg) {
+        const fallbackSvg = document.getElementById('fallback-svg');
+        if (fallbackSvg) {
+            console.log('Using fallback SVG');
+            // Clone the fallback SVG and make it visible
+            svg = fallbackSvg.cloneNode(true);
+            svg.style.display = 'block';
+            mapContainer.appendChild(svg);
+        }
+    }
+
+    // If still no SVG, log error and show error message
+    if (!svg) {
+        console.error('No SVG found in the map container. Possible reasons:');
+        console.error('1. SVG not loaded correctly');
+        console.error('2. Incorrect selector used');
+        console.error('3. SVG content missing');
+        
+        // Show error message to the user
+        const mapError = document.getElementById('map-error');
+        const mapLoading = document.getElementById('map-loading');
+        
+        if (mapLoading) mapLoading.style.display = 'none';
+        if (mapError) {
+            mapError.style.display = 'block';
+            mapError.innerHTML = `
+                <p>Error: Map could not be loaded.</p>
+                <p>Possible reasons:
+                    <ul>
+                        <li>SVG file is missing</li>
+                        <li>Network issues</li>
+                        <li>Incorrect file path</li>
+                    </ul>
+                </p>
+                <button onclick="retryMapLoad()" class="retry-btn">Retry Loading</button>
+            `;
+        }
+        return;
+    }
+
+    // Proceed with map initialization
     svg.setAttribute('width', '100%');
     svg.setAttribute('height', 'auto');
     svg.setAttribute('viewBox', '0 0 2000 1000');
@@ -75,6 +123,28 @@ function initializeMap() {
     
     // Get all country paths
     const countryPaths = svg.querySelectorAll('path');
+    console.log('Country Paths Found:', countryPaths.length);
+    
+    // Bitcoin color palette
+    const colors = {
+        noBtc: '#f8f9fa',
+        lowBtc: '#f7931a33',
+        mediumBtc: '#f7931a88',
+        highBtc: '#f7931a',
+        text: '#4d4d4d',
+        background: '#ffffff',
+        accent: '#f7931a'
+    };
+
+    const btcHoldings = {
+        "US": 207189,
+        "CN": 194000,
+        "GB": 61000,
+        "UA": 46351,
+        "BT": 13029,
+        "SV": 6102,
+        "FI": 90
+    };
     
     countryPaths.forEach(path => {
         // Get country code from the id of the path
@@ -114,10 +184,12 @@ function initializeMap() {
         });
     });
     
+    // Hide loading indicator
+    const mapLoading = document.getElementById('map-loading');
+    if (mapLoading) mapLoading.style.display = 'none';
+    
     // For responsive behavior
-    window.addEventListener('resize', function() {
-        adjustMapSize();
-    });
+    window.addEventListener('resize', adjustMapSize);
     
     adjustMapSize();
 }
@@ -302,3 +374,35 @@ function shareOnSocial(platform) {
             console.error('Unsupported sharing platform');
     }
 }
+
+// Modify retryMapLoad to add more logging
+function retryMapLoad() {
+    console.log('Retrying map load...');
+    
+    const mapContainer = document.getElementById('map-container');
+    const mapLoading = document.getElementById('map-loading');
+    const mapError = document.getElementById('map-error');
+    
+    // Reset to loading state
+    if (mapLoading) mapLoading.style.display = 'block';
+    if (mapError) mapError.style.display = 'none';
+    
+    // Reinitialize the map
+    setTimeout(() => {
+        initializeMap();
+    }, 100);
+}
+
+// Add a global error handler
+window.addEventListener('error', function(event) {
+    console.error('Unhandled error:', event.error);
+    const mapError = document.getElementById('map-error');
+    if (mapError) {
+        mapError.style.display = 'block';
+        mapError.innerHTML = `
+            <p>An unexpected error occurred:</p>
+            <p>${event.error ? event.error.message : 'Unknown error'}</p>
+            <button onclick="retryMapLoad()" class="retry-btn">Retry Loading</button>
+        `;
+    }
+});

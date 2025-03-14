@@ -41,6 +41,14 @@
                     <p>Error loading map. Please check your internet connection or try refreshing the page.</p>
                     <button onclick="retryMapLoad()" class="retry-btn">Retry Loading</button>
                 </div>
+                
+                <!-- Fallback SVG content -->
+                <svg id="fallback-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2000 1000" style="display:none;">
+                    <path id="US" fill="#f7931a33" d="M some path data for US"/>
+                    <path id="CN" fill="#f7931a88" d="M some path data for CN"/>
+                    <path id="GB" fill="#f7931a" d="M some path data for GB"/>
+                    <!-- Add more country paths as needed -->
+                </svg>
             </div>
             
             <div id="country-info">
