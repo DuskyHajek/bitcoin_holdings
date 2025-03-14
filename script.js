@@ -72,7 +72,7 @@ function initializeMap() {
 
     // Proceed with map initialization
     svg.setAttribute('width', '100%');
-    svg.setAttribute('height', 'auto');
+    svg.setAttribute('height', '500px');
     svg.setAttribute('viewBox', '0 0 2000 1000');
     svg.style.maxWidth = '100%';
     
